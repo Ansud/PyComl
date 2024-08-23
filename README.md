@@ -14,4 +14,4 @@ You need to install ruff and pre-commit to properly develop this code. CI in Git
 
 ## Badges
 
-[![Super-Linter](https://github.com/Ansud/PyComl/actions/workflows/main.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![Super-Linter](https://github.com/Ansud/PyComl/actions/workflows/superlinter.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
