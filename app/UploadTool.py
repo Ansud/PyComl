@@ -1,21 +1,9 @@
-'''
-    UploadTool.py
-'''
 import traceback
+
 import requests
-from PyQt6.QtCore import QThread
-from PyQt6.QtCore import QObject
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtCore import QTimer
-from constants import URL
+from constants import TIMESTAMP_STATUSBAR, URL
 from ProcessImageUpload import ProcessImageUpload
-from constants import TIMESTAMP_STATUSBAR
-
-
-'''
-    class UploadTool
-'''
+from PyQt6.QtCore import QThread, QTimer
 
 
 class UploadTool:
@@ -26,7 +14,6 @@ class UploadTool:
     password = ""
 
     def upload_images(self, w):
-        """ upload_images """
         self.widget = w
         try:
             self.widget.clear_status()
@@ -47,41 +34,36 @@ class UploadTool:
             self.widget.threads.clear()
             self.widget.workers.clear()
             self.session = requests.Session()
-            print("UploadTool.py-40 session: " + str(self.session))
-            params_1 = {
-                "action": "query",
-                "meta": "tokens",
-                "type": "login",
-                "format": "json"
-            }
+            print("UploadTool.py-40 session: " + str(self.session))  # noqa: T201
+            params_1 = {"action": "query", "meta": "tokens", "type": "login", "format": "json"}
             try:
                 http_ret = self.session.get(url=URL, params=params_1)
             except requests.exceptions.ConnectionError:
-                print("UploadTool.py-60: ConnectionError.")
+                print("UploadTool.py-60: ConnectionError.")  # noqa: T201
                 return
             except requests.exceptions.Timeout:
-                print("UploadTool.py-63: Timeout.")
+                print("UploadTool.py-63: Timeout.")  # noqa: T201
                 return
             except requests.exceptions.TooManyRedirects:
-                print("UploadTool.py-66: TooManyRedirects.")
+                print("UploadTool.py-66: TooManyRedirects.")  # noqa: T201
                 return
             except requests.exceptions.RequestException:
-                print("UploadTool.py-69: RequestException.")
+                print("UploadTool.py-69: RequestException.")  # noqa: T201
                 return
 
-            print("UploadTool.py-50 http ret (1): " + str(http_ret.json()))
+            print("UploadTool.py-50 http ret (1): " + str(http_ret.json()))  # noqa: T201
             login_token = http_ret.json()["query"]["tokens"]["logintoken"]
             params_2 = {
-                'action': "clientlogin",
-                'username': self.login,
-                'password': self.password,
-                'loginreturnurl': URL,
-                'logintoken': login_token,
-                'format': "json"
+                "action": "clientlogin",
+                "username": self.login,
+                "password": self.password,
+                "loginreturnurl": URL,
+                "logintoken": login_token,
+                "format": "json",
             }
             http_ret = self.session.post(URL, data=params_2)
-            print("UploadTool.py-60 http ret (2): " + str(http_ret.json()))
-            if http_ret.json()['clientlogin']['status'] != 'PASS':
+            print("UploadTool.py-60 http ret (2): " + str(http_ret.json()))  # noqa: T201
+            if http_ret.json()["clientlogin"]["status"] != "PASS":
                 self.widget.btn_import.setEnabled(True)
                 self.widget.set_status("Client login failed")
                 return
@@ -91,7 +73,7 @@ class UploadTool:
                     if element.cb_import.isChecked():
                         checked_image_count = checked_image_count + 1
                 except ValueError:
-                    print("UploadTool.pu-70: element.cb_import.isChecked(")
+                    print("UploadTool.pu-70: element.cb_import.isChecked(")  # noqa: T201
             self.widget.init_upload(checked_image_count)
             if self.check_thread_timer is None:
                 self.check_thread_timer = QTimer()
@@ -108,13 +90,10 @@ class UploadTool:
                     index = image_index
                     thread = QThread()
                     self.widget.threads.append(thread)
-                    process = ProcessImageUpload(
-                        element, self.widget, path, session, index)
+                    process = ProcessImageUpload(element, self.widget, path, session, index)
                     self.widget.workers.append(process)
-                    self.widget.workers[index].moveToThread(
-                        self.widget.threads[index])
-                    self.widget.threads[index].started.connect(
-                        self.widget.workers[index].process)
+                    self.widget.workers[index].moveToThread(self.widget.threads[index])
+                    self.widget.threads[index].started.connect(self.widget.workers[index].process)
                     image_index = image_index + 1
 
             if image_index > 0:
@@ -123,6 +102,5 @@ class UploadTool:
             traceback.print_exc()
 
     def update_status_bar(self):
-        """ update_status_bar """
         if not self.widget.update_uploading_status():
             self.check_thread_timer.stop()

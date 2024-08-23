@@ -1,87 +1,85 @@
-'''
-    PyCommonist.py
-'''
 import os
-import traceback
-import urllib3
-import requests
-from os.path import isfile
-from os.path import join
-import re
-import webbrowser
 import platform
+import re
 import subprocess
-from PyQt6.QtCore import Qt, QSize, QProcess, QDir
-from PyQt6.QtGui import QPixmap, QIcon, QCursor, QFileSystemModel
-from PyQt6.QtWidgets import QHBoxLayout, \
-    QFrame, \
-    QSplitter, \
-    QFormLayout, \
-    QLabel, \
-    QLineEdit, \
-    QPlainTextEdit, \
-    QVBoxLayout, \
-    QScrollArea, \
-    QStyle, \
-    QTreeView, \
-    QWidget, \
-    QCheckBox, \
-    QPushButton, \
-    QMenu, \
-    QMessageBox
+import traceback
+import webbrowser
+from pathlib import Path
+
 import exifread
-from UploadTool import UploadTool
+import requests
 from completer import SearchBox
+from constants import (
+    CHECK_BUTTON_ALL,
+    CHECK_BUTTON_NONE,
+    HORIZONTAL_LEFT_SIZE,
+    HORIZONTAL_RIGHT_SIZE,
+    IMAGE_CATEGORIES,
+    IMAGE_DATE_TIME,
+    IMAGE_DESCRIPTION,
+    IMAGE_DIMENSION,
+    IMAGE_LOCATION,
+    IMAGE_NAME,
+    IMAGE_SIZE,
+    IMAGE_TEMPLATES,
+    IMPORT_BUTTON_N_IMAGES,
+    IMPORT_BUTTON_NO_IMAGE,
+    MENU_DELETE_IMAGE,
+    MENU_EDIT_IMAGE_GIMP,
+    MENU_REMOVE_IMAGE,
+    PYCOMMONIST_VERSION,
+    RELOAD_BUTTON,
+    SORT_BUTTON_BY_DATE,
+    SORT_BUTTON_BY_NAME,
+    STYLE_IMPORT_BUTTON,
+    STYLE_IMPORT_STATUS,
+    STYLE_STATUSBAR,
+    VERTICAL_BOTTOM_SIZE,
+    VERTICAL_TOP_SIZE,
+    WIDTH_WIDGET,
+    WIDTH_WIDGET_RIGHT,
+)
+from EXIFImage import EXIFImage
 from gps_location import get_exif_location
 from ImageUpload import ImageUpload
-from config import LeftFrameConfig
-from config import RightFrameConfig
-from EXIFImage import EXIFImage
+from PyQt6.QtCore import QDir, QProcess, QSize, Qt
+from PyQt6.QtGui import QCursor, QFileSystemModel, QIcon, QPixmap
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QFormLayout,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QScrollArea,
+    QSplitter,
+    QStyle,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
 from send2trash import send2trash
+from UploadTool import UploadTool
 
-from constants import VERTICAL_TOP_SIZE, \
-    VERTICAL_BOTTOM_SIZE, \
-    HORIZONTAL_LEFT_SIZE, \
-    HORIZONTAL_RIGHT_SIZE, \
-    WIDTH_WIDGET, \
-    WIDTH_WIDGET_RIGHT, \
-    IMAGE_DIMENSION, \
-    STYLE_IMPORT_BUTTON, \
-    STYLE_IMPORT_STATUS, \
-    STYLE_STATUSBAR, \
-    CHECK_BUTTON_ALL, \
-    CHECK_BUTTON_NONE, \
-    IMPORT_BUTTON_NO_IMAGE, \
-    IMPORT_BUTTON_N_IMAGES, \
-    RELOAD_BUTTON, \
-    SORT_BUTTON_BY_DATE, \
-    SORT_BUTTON_BY_NAME, \
-    IMAGE_NAME, \
-    IMAGE_DESCRIPTION, \
-    IMAGE_CATEGORIES, \
-    IMAGE_LOCATION, \
-    IMAGE_DATE_TIME, \
-    IMAGE_SIZE, \
-    IMAGE_TEMPLATES, \
-    MENU_DELETE_IMAGE, \
-    MENU_REMOVE_IMAGE, \
-    MENU_EDIT_IMAGE_GIMP, \
-    PYCOMMONIST_VERSION
+from config import LeftFrameConfig, RightFrameConfig
 
 
 class PyCommonist(QWidget):
-
     def __init__(self):
-        super(PyCommonist, self).__init__()
+        super().__init__()
         self.init_ui()
         self.threads = []
         self.workers = []
         self.tool = None
-        self.current_directory_path = ''
-        self.copied_name = ''
-        self.copied_description = ''
-        self.copied_categories = ''
-        self.copied_templates = ''
+        self.current_directory_path = ""
+        self.copied_name = ""
+        self.copied_description = ""
+        self.copied_categories = ""
+        self.copied_templates = ""
         self.upload_failures = 0
         self.upload_failures = 0
         self.upload_status_dots = 0
@@ -90,8 +88,8 @@ class PyCommonist(QWidget):
         self.init_upload(0)
 
     def init_ui(self):
-        """ init_ui """
-        self.current_directory_path = ''
+        """init_ui"""
+        self.current_directory_path = ""
         self.image_sort_order = RightFrameConfig.default_image_sort
 
         self.generate_splitter()
@@ -99,91 +97,83 @@ class PyCommonist(QWidget):
         self.generate_left_bottom_frame()
 
         self.showMaximized()
-        self.setWindowTitle('PyCommonist version ' +
-                            PYCOMMONIST_VERSION + ' - Wikimedia Commons')
+        self.setWindowTitle("PyCommonist version " + PYCOMMONIST_VERSION + " - Wikimedia Commons")
 
         self.show()
 
     def on_select_folder(self, selected):
-        """ on_select_folder """
+        """on_select_folder"""
         try:
             current_index = selected.indexes()[0]
-            self.current_directory_path = self.model_tree.filePath(
-                current_index)
-            print("PyCommonist.py-90 directory: " +
-                  str(self.current_directory_path))
+            self.current_directory_path = self.model_tree.filePath(current_index)
+            print("PyCommonist.py-90 directory: " + str(self.current_directory_path))  # noqa: T201
         except ValueError:
             traceback.print_exc()
 
         self.load_media_from_current_folder()
 
     def load_media_from_current_folder(self):
-        """ load_media_from_current_folder """
+        """load_media_from_current_folder"""
         try:
             self.clear_status()
             self.exif_image_collection = []
 
             if self.current_directory_path.strip() != "":
                 list_dir = os.listdir(self.current_directory_path)
-                files = [f for f in sorted(list_dir) if isfile(
-                    join(self.current_directory_path, f))]
-                for file in files:
-                    full_file_path = os.path.join(
-                        self.current_directory_path, file)
-                    if full_file_path.upper().endswith(".JPEG") or \
-                            full_file_path.upper().endswith(".JPG") or \
-                            full_file_path.upper().endswith(".OGV") or \
-                            full_file_path.upper().endswith(".SVG") or \
-                            full_file_path.upper().endswith(".WEBM") or \
-                            full_file_path.upper().endswith(".PNG"):
 
+                current_directory = Path(self.current_directory_path)
+                files_path = [current_directory / f for f in sorted(list_dir)]
+                files = [fp for fp in files_path if fp.is_file()]
+
+                for full_file in files:
+                    suffix = full_file.suffix.upper()
+                    if suffix in {"JPEG", "JPG", "OGV", "SVG", "WEBM", "PNG"}:
                         current_exif_image = EXIFImage()
-                        current_exif_image.full_file_path = full_file_path
-                        current_exif_image.filename = file
-                        filesize = os.path.getsize(full_file_path)
-                        current_exif_image.filesize = "%.1f MB" % (filesize / 1e6)
+                        current_exif_image.full_file_path = str(full_file)
+                        current_exif_image.filename = full_file.name
+                        filesize = full_file.stat().st_size
+                        current_exif_image.filesize = f"{filesize / 1e6:.1f} MB"
                         tags = None
 
                         try:
-                            f_exif = open(full_file_path, 'rb')
-                            tags = exifread.process_file(f_exif)
+                            with full_file.open("rb") as f_exif:
+                                tags = exifread.process_file(f_exif)
                         except ValueError:
-                            print("PyCommonist.py-120: problem EXIF data reading.")
-                        '''
+                            print("PyCommonist.py-120: problem EXIF data reading.")  # noqa: T201
+                        """
                             'GPS GPSLatitude', 'GPS GPSLongitude'] # [45, 49, 339/25] [4, 55, 716/25]
                             'GPS GPSImgDirection' 'GPS GPSLatitudeRef'
-                        '''
+                        """
                         try:
-                            current_exif_image.lat, current_exif_image.long, current_exif_image.heading = get_exif_location(
-                                tags)
+                            current_exif_image.lat, current_exif_image.long, current_exif_image.heading = (
+                                get_exif_location(tags)
+                            )
                         except ValueError:
-                            print("PyCommonist.py-130: problem EXIF data reading.")
+                            print("PyCommonist.py-130: problem EXIF data reading.")  # noqa: T201
                         dt_timestamp = None
                         try:
-                            if 'EXIF DateTimeOriginal' in tags:
+                            if "EXIF DateTimeOriginal" in tags:
                                 # 2021:01:13 14:48:44
-                                dt_timestamp = tags['EXIF DateTimeOriginal']
+                                dt_timestamp = tags["EXIF DateTimeOriginal"]
                         except ValueError:
-                            print("PyCommonist.py-140: problem EXIF data reading.")
-                        print(dt_timestamp)
+                            print("PyCommonist.py-140: problem EXIF data reading.")  # noqa: T201
+                        print(dt_timestamp)  # noqa: T201
                         self.exif_image_collection.append(current_exif_image)
-                        if dt_timestamp != None:
+                        if dt_timestamp is not None:
                             dt_timestamp = str(dt_timestamp)
                             index_space = dt_timestamp.find(" ")
-                            current_exif_image.date = dt_timestamp[0:index_space].replace(
-                                ":", "-")
-                            current_exif_image.time = dt_timestamp[index_space+1:]
+                            current_exif_image.date = dt_timestamp[0:index_space].replace(":", "-")
+                            current_exif_image.time = dt_timestamp[index_space + 1 :]
                         else:
-                            current_exif_image.date = ''
-                            current_exif_image.time = ''
+                            current_exif_image.date = ""
+                            current_exif_image.time = ""
                 self.generate_right_frame()
         except ValueError:
-            print("Something bad happened inside loadMediaFromCurrentFolder function.")
+            print("Something bad happened inside loadMediaFromCurrentFolder function.")  # noqa: T201
             traceback.print_exc()
 
     def btn_toggle_image_sort_order(self):
-        """ btn_toggle_image_sort_order """
-        if hasattr(self, 'current_upload') is False:
+        if hasattr(self, "current_upload") is False:
             return
         if len(self.current_upload) > 0:
             if self.image_sort_order == "file_name":
@@ -193,23 +183,21 @@ class PyCommonist(QWidget):
             self.generate_right_frame()
 
     def btn_select_no_image(self):
-        """ btn_select_no_image """
-        if hasattr(self, 'current_upload') is False:
+        if hasattr(self, "current_upload") is False:
             return
         if len(self.current_upload) > 0:
             for element in self.current_upload:
                 element.cb_import.setCheckState(False)
 
     def btn_select_all_images(self):
-        """ btn_select_all_images """
-        if hasattr(self, 'current_upload') is False:
+        if hasattr(self, "current_upload") is False:
             return
         if len(self.current_upload) > 0:
             for element in self.current_upload:
                 element.cb_import.setCheckState(True)
 
     def on_toggle_import(self):
-        """ on_toggle_import """
+        """on_toggle_import"""
         selected_imports = 0  # count selected imports
         for element in self.current_upload:
             if element.cb_import.isChecked():
@@ -217,22 +205,21 @@ class PyCommonist(QWidget):
         if selected_imports == 0:  # update selected import counter
             self.btn_import.setText(IMPORT_BUTTON_NO_IMAGE)
         else:
-            self.btn_import.setText(
-                IMPORT_BUTTON_N_IMAGES.format(selected_imports))
+            self.btn_import.setText(IMPORT_BUTTON_N_IMAGES.format(selected_imports))
             self.btn_import.setEnabled(True)
 
     def is_unique_values_array(self, mylist):
-        """ is_unique_values_array """
+        """is_unique_values_array"""
         myset = set(mylist)
         if len(mylist) == len(myset):
             return True
         return False
 
     def on_click_import(self):
-        """ on_click_import """
+        """on_click_import"""
         try:
             self.btn_import.setEnabled(False)  # current_upload not defined
-            if hasattr(self, 'current_upload') is False:
+            if hasattr(self, "current_upload") is False:
                 self.btn_import.setEnabled(True)
                 return
             if len(self.current_upload) == 0:  # No image is selected to be uploaded
@@ -244,8 +231,7 @@ class PyCommonist(QWidget):
             for element in self.current_upload:  # Various checking
                 if not element.cb_import.isChecked():
                     continue
-                desc = self.line_edit_description.toPlainText(
-                ) + element.line_edit_description.toPlainText()
+                desc = self.line_edit_description.toPlainText() + element.line_edit_description.toPlainText()
                 if not (desc and desc.strip()):
                     empty_descriptions = empty_descriptions + 1
                 categs = self.line_edit_categories.text() + element.line_edit_categories.text()
@@ -255,57 +241,60 @@ class PyCommonist(QWidget):
                 file_names.append(file_name)
             # Local file names ok?
             if self.is_unique_values_array(file_names) is False:
-                print(
-                    "PyCommonist.py-220: at least two files locally have the same name.")
+                print("PyCommonist.py-220: at least two files locally have the same name.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 message = QMessageBox()
-                message.setWindowTitle('Problem with local file names')
-                message.setText(
-                    'At least two files locally have the same name')
+                message.setWindowTitle("Problem with local file names")
+                message.setText("At least two files locally have the same name")
                 message.exec()
                 return
             try:
                 for file_name in file_names:  # Distant file name already exists?
-
-                    response = requests.get(
-                        'https://commons.wikimedia.org/wiki/File:' + file_name)
+                    response = requests.get("https://commons.wikimedia.org/wiki/File:" + file_name)
                     if response.status_code == 200:
                         self.btn_import.setEnabled(True)
-                        print(
-                            "PyCommonist.py-230: file name already exists on Wikimedia Commons.")
+                        print("PyCommonist.py-230: file name already exists on Wikimedia Commons.")  # noqa: T201
                         message = QMessageBox()
-                        message.setWindowTitle(
-                            'File name already exists on Wikimedia Commons')
-                        message.setText(
-                            file_name + ': file name already exists on Wikimedia Commons')
+                        message.setWindowTitle("File name already exists on Wikimedia Commons")
+                        message.setText(file_name + ": file name already exists on Wikimedia Commons")
                         message.exec()
                         return
             except requests.exceptions.ConnectionError:
-                print("PyCommonist.py-278: ConnectionError.")
+                print("PyCommonist.py-278: ConnectionError.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
             except requests.exceptions.Timeout:
-                print("PyCommonist.py-282: Timeout.")
+                print("PyCommonist.py-282: Timeout.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
             except requests.exceptions.TooManyRedirects:
-                print("PyCommonist.py-286: TooManyRedirects.")
+                print("PyCommonist.py-286: TooManyRedirects.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
             except requests.exceptions.RequestException:
-                print("PyCommonist.py-290: RequestException.")
+                print("PyCommonist.py-290: RequestException.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
 
             if empty_descriptions > 0:  # Description ok?
-                confirmation = QMessageBox.question(self, 'Incomplete Descriptions', 'There are %s image(s) without description, continue upload?' %
-                                                    empty_descriptions, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+                confirmation = QMessageBox.question(
+                    self,
+                    "Incomplete Descriptions",
+                    f"There are {empty_descriptions} image(s) without description, continue upload?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
                 if confirmation == QMessageBox.StandardButton.No:
                     self.btn_import.setEnabled(True)
                     return
             if empty_categories > 0:  # Categories ok?
-                confirmation = QMessageBox.question(self, 'Incomplete Categories', 'There are %s image(s) without category, continue upload?' %
-                                                    empty_categories, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+                confirmation = QMessageBox.question(
+                    self,
+                    "Incomplete Categories",
+                    f"There are {empty_categories} image(s) without category, continue upload?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
                 if confirmation == QMessageBox.StandardButton.No:
                     self.btn_import.setEnabled(True)
                     return
@@ -317,27 +306,26 @@ class PyCommonist(QWidget):
             traceback.print_exc()
 
     def on_click_clear_location(self, image_widget):
-        """ Clear location """
+        """Clear location"""
         image_widget.lineEditLocation.setText("")
 
     def on_click_view_location(self, image_widget):
-        """ View location in web browser """
+        """View location in web browser"""
         loc = image_widget.lineEditLocation.text()
         if loc:
             numbers = re.findall("-?\d+\.?\d*", loc)
             if len(numbers) >= 2:
-                url = "https://www.openstreetmap.org/search?query={}%2C{}".format(
-                    numbers[0], numbers[1])
+                url = f"https://www.openstreetmap.org/search?query={numbers[0]}%2C{numbers[1]}"
                 webbrowser.open(url)
 
     def on_click_preview_image(self, image_widget):
-        """ Open clicked thumbnail with Preview """
+        """Open clicked thumbnail with Preview"""
         process = QProcess()
-        process.start('open', ['-a', 'Preview', image_widget.full_file_path])
+        process.start("open", ["-a", "Preview", image_widget.full_file_path])
         process.waitForFinished(-1)
 
     def on_thumbnail_context_menu(self, image_widget):
-        """ Open context menu on thumbnail right-click """
+        """Open context menu on thumbnail right-click"""
         menu = QMenu()
         deleteAction = menu.addAction(MENU_DELETE_IMAGE)
         removeAction = menu.addAction(MENU_REMOVE_IMAGE)
@@ -351,13 +339,15 @@ class PyCommonist(QWidget):
         elif action == removeAction:
             self.remove_file_from_list(file_path)
         elif action == editAction:
-            if platform.system() == 'Darwin':
-                gimpPath = subprocess.check_output(["find", "/Applications", "-type", "f", "-perm", "+111", "-name", "gimp", "-print", "-quit"])
-                gimpPath = gimpPath.decode('UTF-8').strip()
+            if platform.system() == "Darwin":
+                gimpPath = subprocess.check_output(
+                    ["find", "/Applications", "-type", "f", "-perm", "+111", "-name", "gimp", "-print", "-quit"]
+                )
+                gimpPath = gimpPath.decode("UTF-8").strip()
                 if gimpPath.endswith("gimp"):
                     subprocess.Popen([gimpPath, image_widget.full_file_path])
                 else:
-                    print("PyCommonist.py-362: gimp not found '{}'.".format(gimpPath))
+                    print(f"PyCommonist.py-362: gimp not found '{gimpPath}'.")  # noqa: T201
 
     def remove_file_from_list(self, file_path):
         for i in range(self.scroll_layout.count()):
@@ -367,11 +357,9 @@ class PyCommonist(QWidget):
                 # delete widget to remove it from list
                 widget.deleteLater()
                 # also remove image from collection and widget from upload list
-                removedImage = next(
-                    (e for e in self.exif_image_collection if e.full_file_path == file_path), None)
+                removedImage = next((e for e in self.exif_image_collection if e.full_file_path == file_path), None)
                 self.exif_image_collection.remove(removedImage)
-                removedWidget = next(
-                    (w for w in self.current_upload if w.full_file_path == file_path), None)
+                removedWidget = next((w for w in self.current_upload if w.full_file_path == file_path), None)
                 self.current_upload.remove(removedWidget)
                 # refresh import button
                 self.on_toggle_import()
@@ -380,17 +368,17 @@ class PyCommonist(QWidget):
                 break
 
     def clean_threads(self):
-        """ clean_threads """
+        """clean_threads"""
         try:
             for thread in self.threads:
-                print("PyCommonist.py-290: current thread proper deletion.")
+                print("PyCommonist.py-290: current thread proper deletion.")  # noqa: T201
                 thread.quit()
                 thread.wait()
         except ValueError:
-            print("PyCommonist.py-290: problem with cleaning threads.")
+            print("PyCommonist.py-290: problem with cleaning threads.")  # noqa: T201
 
     def generate_splitter(self):
-        """ generate_splitter """
+        """generate_splitter"""
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         self.left_top_frame = QFrame()
@@ -416,8 +404,7 @@ class PyCommonist(QWidget):
         self.splitter_central = QSplitter(Qt.Orientation.Horizontal)
         self.splitter_central.addWidget(self.splitter_left)
         self.splitter_central.addWidget(self.right_widget)
-        self.splitter_central.setSizes(
-            [HORIZONTAL_LEFT_SIZE, HORIZONTAL_RIGHT_SIZE])
+        self.splitter_central.setSizes([HORIZONTAL_LEFT_SIZE, HORIZONTAL_RIGHT_SIZE])
         hbox.addWidget(self.splitter_central)
         vbox.addLayout(hbox)
         self.status_bar = QLabel()
@@ -426,7 +413,7 @@ class PyCommonist(QWidget):
         self.setLayout(vbox)
 
     def generate_left_top_frame(self):
-        """ generate_left_top_frame """
+        """generate_left_top_frame"""
         self.layout_left_top = QFormLayout()
         self.layout_left_top.setFormAlignment(Qt.AlignmentFlag.AlignTop)
         self.lbl_user_name = QLabel("Username: ")
@@ -435,8 +422,7 @@ class PyCommonist(QWidget):
         self.line_edit_user_name.setText(LeftFrameConfig.username)
         self.line_edit_user_name.setFixedWidth(WIDTH_WIDGET)
         self.line_edit_user_name.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.layout_left_top.addRow(
-            self.lbl_user_name, self.line_edit_user_name)
+        self.layout_left_top.addRow(self.lbl_user_name, self.line_edit_user_name)
         self.lbl_password = QLabel("Password: ")
         self.lbl_password.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.line_edit_password = QLineEdit()
@@ -464,8 +450,7 @@ class PyCommonist(QWidget):
         self.line_edit_categories.setText(LeftFrameConfig.categories)
         self.line_edit_categories.setFixedWidth(WIDTH_WIDGET)
         self.line_edit_categories.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.layout_left_top.addRow(
-            self.lbl_categories, self.line_edit_categories)
+        self.layout_left_top.addRow(self.lbl_categories, self.line_edit_categories)
         self.lbl_license = QLabel("License: ")
         self.lbl_license.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.line_edit_license = QLineEdit()
@@ -484,8 +469,7 @@ class PyCommonist(QWidget):
         self.lbl_description.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self.line_edit_description = QPlainTextEdit()
         self.line_edit_description.setFixedWidth(WIDTH_WIDGET)
-        self.layout_left_top.addRow(
-            self.lbl_description, self.line_edit_description)
+        self.layout_left_top.addRow(self.lbl_description, self.line_edit_description)
         separation_left_top_frame = QLabel()
         self.layout_left_top.addWidget(separation_left_top_frame)
         import_widget = QWidget()
@@ -500,7 +484,7 @@ class PyCommonist(QWidget):
         self.left_top_frame.setLayout(self.layout_left_top)
 
     def generate_left_bottom_frame(self):
-        """ generate_left_bottom_frame """
+        """generate_left_bottom_frame"""
         self.layout_left_bottom = QVBoxLayout()
         self.model_tree = QFileSystemModel()
         self.model_tree.setRootPath(QDir.currentPath())
@@ -516,20 +500,18 @@ class PyCommonist(QWidget):
         self.left_botton_frame.setLayout(self.layout_left_bottom)
 
     def generate_right_frame_buttons(self):
-        """ generate_right_frame_buttons """
+        """generate_right_frame_buttons"""
         import_command_widget = QWidget()
         import_command_layout = QHBoxLayout()
         import_command_widget.setLayout(import_command_layout)
         self.btn_toggle_image_sort = QPushButton(SORT_BUTTON_BY_NAME)
-        self.btn_toggle_image_sort.clicked.connect(
-            self.btn_toggle_image_sort_order)
+        self.btn_toggle_image_sort.clicked.connect(self.btn_toggle_image_sort_order)
         self.btn_import_check_none = QPushButton(CHECK_BUTTON_NONE)
         self.btn_import_check_none.clicked.connect(self.btn_select_no_image)
         self.btn_import_check_all = QPushButton(CHECK_BUTTON_ALL)
         self.btn_import_check_all.clicked.connect(self.btn_select_all_images)
         self.btn_reload_folder = QPushButton(RELOAD_BUTTON)
-        self.btn_reload_folder.clicked.connect(
-            self.load_media_from_current_folder)
+        self.btn_reload_folder.clicked.connect(self.load_media_from_current_folder)
         import_command_layout.addWidget(self.btn_toggle_image_sort)
         import_command_layout.addWidget(self.btn_import_check_none)
         import_command_layout.addWidget(self.btn_import_check_all)
@@ -538,16 +520,14 @@ class PyCommonist(QWidget):
 
     def update_sort_button(self):
         image_count = len(self.exif_image_collection)
-        formatted_image_count = " ({})".format(image_count)
+        formatted_image_count = f" ({image_count})"
         if self.image_sort_order == "exif_date":
-            self.btn_toggle_image_sort.setText(
-                SORT_BUTTON_BY_DATE + formatted_image_count)
+            self.btn_toggle_image_sort.setText(SORT_BUTTON_BY_DATE + formatted_image_count)
         else:
-            self.btn_toggle_image_sort.setText(
-                SORT_BUTTON_BY_NAME + formatted_image_count)
+            self.btn_toggle_image_sort.setText(SORT_BUTTON_BY_NAME + formatted_image_count)
 
     def generate_right_frame(self):
-        """ generate_right_frame """
+        """generate_right_frame"""
         self.current_upload = []
         layout = self.scroll_layout
         while layout.count():
@@ -557,8 +537,7 @@ class PyCommonist(QWidget):
 
         # sort images using selected order and update button with image count
         if self.image_sort_order == "exif_date":
-            self.exif_image_collection.sort(
-                key=lambda image: image.date + ' ' + image.time)
+            self.exif_image_collection.sort(key=lambda image: image.date + " " + image.time)
         else:
             self.exif_image_collection.sort(key=lambda image: image.filename)
         self.update_sort_button()
@@ -589,10 +568,10 @@ class PyCommonist(QWidget):
             result_layout.addWidget(btn_copy_paste, 1)
             copy_paste_menu = QMenu()
             copy_action = copy_paste_menu.addAction("Copy")
-            paste_action = copy_paste_menu.addAction(
-                "Paste name, description and categories")
+            paste_action = copy_paste_menu.addAction("Paste name, description and categories")
             paste_with_numbering_action = copy_paste_menu.addAction(
-                "Paste name with numbering, description and categories")
+                "Paste name with numbering, description and categories"
+            )
             btn_copy_paste.setMenu(copy_paste_menu)
             local_left_layout.addRow(cb_import, result_layout)
             local_widget.cb_import = cb_import
@@ -604,8 +583,7 @@ class PyCommonist(QWidget):
             line_edit_file_name.setFixedWidth(WIDTH_WIDGET_RIGHT)
             line_edit_file_name.setText(current_exif_image.filename)
             line_edit_file_name.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            line_edit_file_name.textChanged.connect(
-                lambda state, w=cb_import: w.setChecked(True))
+            line_edit_file_name.textChanged.connect(lambda state, w=cb_import: w.setChecked(True))
             local_left_layout.addRow(lbl_file_name, line_edit_file_name)
             local_widget.line_edit_file_name = line_edit_file_name
             lbl_real_file_name = QLineEdit()
@@ -627,8 +605,7 @@ class PyCommonist(QWidget):
             line_edit_categories.setFixedWidth(WIDTH_WIDGET_RIGHT)
             local_left_layout.addRow(QLabel(""), line_edit_categories)
             local_widget.line_edit_categories = line_edit_categories
-            local_widget.searchBoxCategory.returnPressed.connect(
-                local_widget.on_pressed)
+            local_widget.searchBoxCategory.returnPressed.connect(local_widget.on_pressed)
 
             # location
             lbl_location = QLabel(IMAGE_LOCATION)
@@ -637,24 +614,27 @@ class PyCommonist(QWidget):
             line_edit_location = QLineEdit()
             line_edit_location.setFixedWidth(WIDTH_WIDGET_RIGHT - 80)
             if current_exif_image.lat is None or current_exif_image.long is None:
-                line_edit_location.setText('')
+                line_edit_location.setText("")
             else:
-                line_edit_location.setText(str(current_exif_image.lat) + '|' + str(
-                    current_exif_image.long) + "|heading:" + str(current_exif_image.heading))
+                line_edit_location.setText(
+                    str(current_exif_image.lat)
+                    + "|"
+                    + str(current_exif_image.long)
+                    + "|heading:"
+                    + str(current_exif_image.heading)
+                )
             line_edit_location.setAlignment(Qt.AlignmentFlag.AlignLeft)
             local_widget.lineEditLocation = line_edit_location
 
             btn_clear_location = QPushButton("")
             btn_clear_location.setFixedWidth(25)
             btn_clear_location.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCancelButton))
-            btn_clear_location.clicked.connect(
-                lambda state, w=local_widget: self.on_click_clear_location(w))
+            btn_clear_location.clicked.connect(lambda state, w=local_widget: self.on_click_clear_location(w))
 
             btn_view_location = QPushButton("")
             btn_view_location.setFixedWidth(25)
             btn_view_location.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
-            btn_view_location.clicked.connect(
-                lambda state, w=local_widget: self.on_click_view_location(w))
+            btn_view_location.clicked.connect(lambda state, w=local_widget: self.on_click_view_location(w))
 
             location_layout = QHBoxLayout()
             location_layout.addWidget(line_edit_location)
@@ -668,8 +648,7 @@ class PyCommonist(QWidget):
             lbl_date_time.setAlignment(Qt.AlignmentFlag.AlignLeft)
             line_edit_date_time = QLineEdit()
             line_edit_date_time.setFixedWidth(WIDTH_WIDGET_RIGHT - 100)
-            line_edit_date_time.setText(
-                current_exif_image.date + ' ' + current_exif_image.time)
+            line_edit_date_time.setText(current_exif_image.date + " " + current_exif_image.time)
             line_edit_date_time.setAlignment(Qt.AlignmentFlag.AlignLeft)
             local_widget.line_edit_date_time = line_edit_date_time
 
@@ -693,47 +672,51 @@ class PyCommonist(QWidget):
             local_widget.line_edit_templates = line_edit_templates
 
             # copy/paste actions
-            copy_action.triggered.connect(
-                lambda state, w=local_widget: self.copy_image_info(w))
-            paste_action.triggered.connect(
-                lambda state, w=local_widget: self.paste_image_info(w, False))
-            paste_with_numbering_action.triggered.connect(
-                lambda state, w=local_widget: self.paste_image_info(w, True))
+            copy_action.triggered.connect(lambda state, w=local_widget: self.copy_image_info(w))
+            paste_action.triggered.connect(lambda state, w=local_widget: self.paste_image_info(w, False))
+            paste_with_numbering_action.triggered.connect(lambda state, w=local_widget: self.paste_image_info(w, True))
 
             # push button displaying thumbnail
             thumbnail = QPushButton()
-            if current_exif_image.full_file_path.upper().endswith(".OGV") or current_exif_image.full_file_path.upper().endswith(".WEBM"):
-                pixmap = QPixmap('img/Logo PyCommonist.svg')
+            if current_exif_image.full_file_path.upper().endswith(
+                ".OGV"
+            ) or current_exif_image.full_file_path.upper().endswith(".WEBM"):
+                pixmap = QPixmap("img/Logo PyCommonist.svg")
             else:
                 pixmap = QPixmap(current_exif_image.full_file_path)
-            pixmap_resized = pixmap.scaled(IMAGE_DIMENSION, IMAGE_DIMENSION, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.FastTransformation)
+            pixmap_resized = pixmap.scaled(
+                IMAGE_DIMENSION,
+                IMAGE_DIMENSION,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.FastTransformation,
+            )
             pixmap_icon = QIcon(pixmap_resized)
             thumbnail.setFlat(True)
             thumbnail.setIcon(pixmap_icon)
             thumbnail.setIconSize(QSize(IMAGE_DIMENSION, IMAGE_DIMENSION))
-            thumbnail.clicked.connect(
-                lambda state, w=local_widget: self.on_click_preview_image(w))
+            thumbnail.clicked.connect(lambda state, w=local_widget: self.on_click_preview_image(w))
             local_layout.addWidget(thumbnail)
             local_widget.full_file_path = current_exif_image.full_file_path
             # push button context menu
             thumbnail.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             thumbnail.customContextMenuRequested.connect(
-                lambda state, w=local_widget: self.on_thumbnail_context_menu(w))
+                lambda state, w=local_widget: self.on_thumbnail_context_menu(w)
+            )
 
             self.update()
 
     def copy_image_info(self, image_widget):
-        """ copy_image_info """
+        """copy_image_info"""
         self.copied_name = image_widget.line_edit_file_name.text()
         self.copied_description = image_widget.line_edit_description.toPlainText()
         self.copied_categories = image_widget.line_edit_categories.text()
         self.copied_templates = image_widget.line_edit_templates.text()
 
     def paste_image_info(self, image_widget, increase_number):
-        """ paste_image_info """
+        """paste_image_info"""
         name = self.copied_name
         if increase_number:
-            number_list = re.findall(r'\d+', name)
+            number_list = re.findall(r"\d+", name)
             if len(number_list) > 0:
                 val = number_list[-1]
                 next_val = str(int(val) + 1)
@@ -743,41 +726,40 @@ class PyCommonist(QWidget):
                 name = next_val.join(remove_last_number)
                 self.copied_name = name
         image_widget.line_edit_file_name.setText(name)
-        image_widget.line_edit_description.setPlainText(
-            self.copied_description)
+        image_widget.line_edit_description.setPlainText(self.copied_description)
         image_widget.line_edit_categories.setText(self.copied_categories)
         image_widget.line_edit_templates.setText(self.copied_templates)
 
     def clear_status(self):
-        """ clear_status """
+        """clear_status"""
         self.status_bar.setText("")
 
     def set_status(self, message):
-        """ set_status """
+        """set_status"""
         self.status_bar.setText(message)
 
     def init_upload(self, count):
-        """ init_upload """
+        """init_upload"""
         self.number_images_checked = count
         self.upload_successes = 0
         self.upload_failures = 0
         self.upload_status_dots = 0
 
     def update_uploading_status(self):
-        """ update_uploading_status """
+        """update_uploading_status"""
         total = self.upload_successes + self.upload_failures
         if total >= self.number_images_checked:
             return False
         self.upload_status_dots = self.upload_status_dots + 1
         if self.upload_status_dots > 10:
             self.upload_status_dots = 0
-        message = "{}/{} ".format(total, self.number_images_checked)
+        message = f"{total}/{self.number_images_checked} "
         message = message + "." * self.upload_status_dots
         self.set_status(message)
         return True
 
     def set_upload_status(self, success):
-        """ set_upload_status """
+        """set_upload_status"""
         if success:
             self.upload_successes = self.upload_successes + 1
         else:
@@ -787,11 +769,10 @@ class PyCommonist(QWidget):
         failures = self.upload_failures
         total = self.number_images_checked
         if successes > 0:
-            message = message + \
-                " {}/{} image(s) successfully uploaded".format(successes, total)
+            message = message + f" {successes}/{total} image(s) successfully uploaded"
         if failures > 0:
             if successes > 0:
                 message = message + "; "
-            message = message + "{} upload(s) failed!".format(failures)
+            message = message + f"{failures} upload(s) failed!"
         self.set_status(message)
         self.btn_import.setEnabled(True)
