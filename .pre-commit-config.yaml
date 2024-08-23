@@ -21,7 +21,8 @@ repos:
   - id: file-contents-sorter
     args: ['--unique']
     files: |
-      requirements.txt
+      .github/super-linter.env|
+      requirements.txt|
       requirements-dev.txt
   - id: check-case-conflict
   - id: check-json
