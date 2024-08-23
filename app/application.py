@@ -8,40 +8,6 @@ from pathlib import Path
 
 import exifread
 import requests
-from completer import SearchBox
-from constants import (
-    CHECK_BUTTON_ALL,
-    CHECK_BUTTON_NONE,
-    HORIZONTAL_LEFT_SIZE,
-    HORIZONTAL_RIGHT_SIZE,
-    IMAGE_CATEGORIES,
-    IMAGE_DATE_TIME,
-    IMAGE_DESCRIPTION,
-    IMAGE_DIMENSION,
-    IMAGE_LOCATION,
-    IMAGE_NAME,
-    IMAGE_SIZE,
-    IMAGE_TEMPLATES,
-    IMPORT_BUTTON_N_IMAGES,
-    IMPORT_BUTTON_NO_IMAGE,
-    MENU_DELETE_IMAGE,
-    MENU_EDIT_IMAGE_GIMP,
-    MENU_REMOVE_IMAGE,
-    PYCOMMONIST_VERSION,
-    RELOAD_BUTTON,
-    SORT_BUTTON_BY_DATE,
-    SORT_BUTTON_BY_NAME,
-    STYLE_IMPORT_BUTTON,
-    STYLE_IMPORT_STATUS,
-    STYLE_STATUSBAR,
-    VERTICAL_BOTTOM_SIZE,
-    VERTICAL_TOP_SIZE,
-    WIDTH_WIDGET,
-    WIDTH_WIDGET_RIGHT,
-)
-from EXIFImage import EXIFImage
-from gps_location import get_exif_location
-from ImageUpload import ImageUpload
 from PyQt6.QtCore import QDir, QProcess, QSize, Qt
 from PyQt6.QtGui import QCursor, QFileSystemModel, QIcon, QPixmap
 from PyQt6.QtWidgets import (
@@ -63,12 +29,46 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from send2trash import send2trash
-from UploadTool import UploadTool
 
-from config import LeftFrameConfig, RightFrameConfig
+from app.completer import SearchBox
+from app.constants import (
+    CHECK_BUTTON_ALL,
+    CHECK_BUTTON_NONE,
+    HORIZONTAL_LEFT_SIZE,
+    HORIZONTAL_RIGHT_SIZE,
+    IMAGE_CATEGORIES,
+    IMAGE_DATE_TIME,
+    IMAGE_DESCRIPTION,
+    IMAGE_DIMENSION,
+    IMAGE_LOCATION,
+    IMAGE_NAME,
+    IMAGE_SIZE,
+    IMAGE_TEMPLATES,
+    IMPORT_BUTTON_N_IMAGES,
+    IMPORT_BUTTON_NO_IMAGE,
+    MENU_DELETE_IMAGE,
+    MENU_EDIT_IMAGE_GIMP,
+    MENU_REMOVE_IMAGE,
+    PYCOML_VERSION,
+    RELOAD_BUTTON,
+    SORT_BUTTON_BY_DATE,
+    SORT_BUTTON_BY_NAME,
+    STYLE_IMPORT_BUTTON,
+    STYLE_IMPORT_STATUS,
+    STYLE_STATUSBAR,
+    VERTICAL_BOTTOM_SIZE,
+    VERTICAL_TOP_SIZE,
+    WIDTH_WIDGET,
+    WIDTH_WIDGET_RIGHT,
+)
+from app.core.config import LeftFrameConfig, RightFrameConfig
+from app.core.image.exif import EXIFImage
+from app.core.image.gps_location import get_exif_location
+from app.service.upload import UploadTool
+from app.widget.upload import ImageUpload
 
 
-class PyCommonist(QWidget):
+class PyComlApplication(QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -97,7 +97,7 @@ class PyCommonist(QWidget):
         self.generate_left_bottom_frame()
 
         self.showMaximized()
-        self.setWindowTitle("PyCommonist version " + PYCOMMONIST_VERSION + " - Wikimedia Commons")
+        self.setWindowTitle("PyComl version " + PYCOML_VERSION + " - Wikimedia Commons")
 
         self.show()
 
@@ -106,7 +106,7 @@ class PyCommonist(QWidget):
         try:
             current_index = selected.indexes()[0]
             self.current_directory_path = self.model_tree.filePath(current_index)
-            print("PyCommonist.py-90 directory: " + str(self.current_directory_path))  # noqa: T201
+            print("application.py-90 directory: " + str(self.current_directory_path))  # noqa: T201
         except ValueError:
             traceback.print_exc()
 
@@ -139,7 +139,7 @@ class PyCommonist(QWidget):
                             with full_file.open("rb") as f_exif:
                                 tags = exifread.process_file(f_exif)
                         except ValueError:
-                            print("PyCommonist.py-120: problem EXIF data reading.")  # noqa: T201
+                            print("application.py-120: problem EXIF data reading.")  # noqa: T201
                         """
                             'GPS GPSLatitude', 'GPS GPSLongitude'] # [45, 49, 339/25] [4, 55, 716/25]
                             'GPS GPSImgDirection' 'GPS GPSLatitudeRef'
@@ -149,14 +149,14 @@ class PyCommonist(QWidget):
                                 get_exif_location(tags)
                             )
                         except ValueError:
-                            print("PyCommonist.py-130: problem EXIF data reading.")  # noqa: T201
+                            print("application.py-130: problem EXIF data reading.")  # noqa: T201
                         dt_timestamp = None
                         try:
                             if "EXIF DateTimeOriginal" in tags:
                                 # 2021:01:13 14:48:44
                                 dt_timestamp = tags["EXIF DateTimeOriginal"]
                         except ValueError:
-                            print("PyCommonist.py-140: problem EXIF data reading.")  # noqa: T201
+                            print("application.py-140: problem EXIF data reading.")  # noqa: T201
                         print(dt_timestamp)  # noqa: T201
                         self.exif_image_collection.append(current_exif_image)
                         if dt_timestamp is not None:
@@ -241,7 +241,7 @@ class PyCommonist(QWidget):
                 file_names.append(file_name)
             # Local file names ok?
             if self.is_unique_values_array(file_names) is False:
-                print("PyCommonist.py-220: at least two files locally have the same name.")  # noqa: T201
+                print("application.py-220: at least two files locally have the same name.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 message = QMessageBox()
                 message.setWindowTitle("Problem with local file names")
@@ -253,26 +253,26 @@ class PyCommonist(QWidget):
                     response = requests.get("https://commons.wikimedia.org/wiki/File:" + file_name)
                     if response.status_code == 200:
                         self.btn_import.setEnabled(True)
-                        print("PyCommonist.py-230: file name already exists on Wikimedia Commons.")  # noqa: T201
+                        print("application.py-230: file name already exists on Wikimedia Commons.")  # noqa: T201
                         message = QMessageBox()
                         message.setWindowTitle("File name already exists on Wikimedia Commons")
                         message.setText(file_name + ": file name already exists on Wikimedia Commons")
                         message.exec()
                         return
             except requests.exceptions.ConnectionError:
-                print("PyCommonist.py-278: ConnectionError.")  # noqa: T201
+                print("application.py-278: ConnectionError.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
             except requests.exceptions.Timeout:
-                print("PyCommonist.py-282: Timeout.")  # noqa: T201
+                print("application.py-282: Timeout.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
             except requests.exceptions.TooManyRedirects:
-                print("PyCommonist.py-286: TooManyRedirects.")  # noqa: T201
+                print("application.py-286: TooManyRedirects.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
             except requests.exceptions.RequestException:
-                print("PyCommonist.py-290: RequestException.")  # noqa: T201
+                print("application.py-290: RequestException.")  # noqa: T201
                 self.btn_import.setEnabled(True)
                 return
 
@@ -347,7 +347,7 @@ class PyCommonist(QWidget):
                 if gimpPath.endswith("gimp"):
                     subprocess.Popen([gimpPath, image_widget.full_file_path])
                 else:
-                    print(f"PyCommonist.py-362: gimp not found '{gimpPath}'.")  # noqa: T201
+                    print(f"application.py-362: gimp not found '{gimpPath}'.")  # noqa: T201
 
     def remove_file_from_list(self, file_path):
         for i in range(self.scroll_layout.count()):
@@ -368,17 +368,15 @@ class PyCommonist(QWidget):
                 break
 
     def clean_threads(self):
-        """clean_threads"""
         try:
             for thread in self.threads:
-                print("PyCommonist.py-290: current thread proper deletion.")  # noqa: T201
+                print("application.py-290: current thread proper deletion.")  # noqa: T201
                 thread.quit()
                 thread.wait()
         except ValueError:
-            print("PyCommonist.py-290: problem with cleaning threads.")  # noqa: T201
+            print("application.py-290: problem with cleaning threads.")  # noqa: T201
 
     def generate_splitter(self):
-        """generate_splitter"""
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
         self.left_top_frame = QFrame()

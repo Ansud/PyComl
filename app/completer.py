@@ -1,10 +1,11 @@
 import json
 
-from constants import WIDTH_WIDGET_RIGHT
 from PyQt6.QtCore import QEvent, QMetaObject, QObject, QPoint, Qt, QTimer, QUrl
 from PyQt6.QtGui import QPalette
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PyQt6.QtWidgets import QAbstractItemView, QFrame, QLineEdit, QTreeWidget, QTreeWidgetItem
+
+from app.constants import WIDTH_WIDGET_RIGHT
 
 
 class SuggestCompletion(QObject):

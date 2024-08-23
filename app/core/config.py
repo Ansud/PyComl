@@ -6,8 +6,8 @@ import yaml
 def load_config_as_dict(config_filename):
     current_path = Path(__file__).absolute().parent
 
-    # Config is in upper directory (move to any home plz)
-    config_path = current_path.parent / config_filename
+    # Config is in upper/upper directory (move to any home plz)
+    config_path = current_path.parent.parent / config_filename
 
     with config_path.open("r") as f:
         config = yaml.safe_load(f)

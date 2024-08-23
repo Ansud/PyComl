@@ -2,8 +2,9 @@ import re
 import traceback
 from pathlib import Path
 
-from constants import URL
 from PyQt6.QtCore import QObject, QTimer, pyqtSlot
+
+from app.constants import URL
 
 
 class ProcessImageUpload(QObject):
@@ -59,7 +60,7 @@ class ProcessImageUpload(QObject):
                 "format": "json",
                 "token": CSRF_TOKEN,
                 "ignorewarnings": 1,
-                "comment": "PyCommonist upload: " + file_name,
+                "comment": "PyComl upload: " + file_name,
                 "text": text,
             }
 
@@ -104,9 +105,9 @@ class ProcessImageUpload(QObject):
         cat_text = cat_text.replace(" | ", "|")
         cat_text = cat_text.strip()
         if cat_text == "|":
-            cat_text = "Uploaded with PyCommonist"
+            cat_text = "Uploaded with PyComl"
         else:
-            cat_text += "|Uploaded with PyCommonist"
+            cat_text += "|Uploaded with PyComt"
         cat_text = cat_text.replace("||", "|")
         print(cat_text)  # noqa: T201
         categories = cat_text.split("|")
