@@ -1,18 +1,15 @@
-# PyCommonist
+# PyComl
 
-PyCommonist is coded in Python/PyQt6. It is inspired by excellent software [Commonist](https://commons.wikimedia.org/wiki/Commons:Commonist/fr). Its usage is to easily upload images to Wikimedia Commons. 
+PyComl is coded in Python/PyQt6. It is inspired by excellent software [PyCommonist](https://github.com/benprieur/PyCommonist). 
 
-Current version is 1.0 (30 May 2022).
+Current version is 0.0 (23 August 2024).
 
-To install and run it:
-* `git clone https://github.com/benprieur/PyCommonist.git`
-* `cd PyCommonist`
+To install and run it (it is ugly way and you need lot of stuff installed additionally):
+* `git clone https://github.com/Ansud/PyComl.git`
+* `cd PyComl`
 * `virtualenv venv`
 * `source venv/bin/activate`
 * `pip install -r requirements.txt`
 * `python3 main.py`
 
-![Screenshot](img/screenshot-V0.2-2022-05-29.png "Screenshot vgit 0.2")
 
-
-[Project history (in French)](History.md)
