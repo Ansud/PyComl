@@ -6,11 +6,13 @@ Current version is 0.0 (23.08.2024), MVP in progress.
 
 ## User manual
 
-It is better to not try to clone and run, this stuff is mostly for developers. Please use installers.
+It is better to not try to clone and run, this stuff is mostly for developers.
+Please use installers.
 
 ## Development installation
 
-You need to install ruff and pre-commit to properly develop this code. CI in GitHub will run linters and check proper formatting.
+You need to install ruff and pre-commit to properly develop this code.
+CI in GitHub will run linters and check proper formatting.
 
 ## Badges
 
