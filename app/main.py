@@ -14,7 +14,3 @@ def main():
     # This variable should be alive, otherwise it will be destroyed by GC
     _application_storage.add(PyCommonist())
     sys.exit(app.exec())
-
-
-if __name__ == "__main__":
-    main()
