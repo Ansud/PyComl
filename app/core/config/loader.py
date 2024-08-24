@@ -9,7 +9,7 @@ from PyQt6.QtCore import QStandardPaths
 from app.core.constants import PYCOML_APP_NAME
 from app.core.logging import logger
 
-from .schema import ApplicationSettings
+from .schema import ApplicationSettings, DefaultSettings
 
 
 class Settings:
@@ -44,7 +44,7 @@ class Settings:
     @classmethod
     def generate_default(cls) -> ApplicationSettings:
         logger.debug("Generate default config")
-        return ApplicationSettings()
+        return DefaultSettings()
 
     @classmethod
     def load(cls) -> Self:
@@ -54,42 +54,40 @@ class Settings:
 
         file_name = config_file_path / cls.NAME
 
-        def try_load() -> ApplicationSettings | None:
+        def try_load() -> ApplicationSettings:
             load_logger = logger.bind(file_name=str(file_name))
 
             if not file_name.exists():
-                return None
+                return cls.generate_default()
 
             file_size = file_name.stat().st_size
 
             if file_size > cls.MAX_SIZE:
                 load_logger.warning("Config file size is too large, reset it", size=file_size)
-                return None
+                return cls.generate_default()
 
             try:
                 with file_name.open("r+") as f:
                     raw_data = f.read()
             except OSError as e:
                 load_logger.warning("Failed to open config file, reset it", exception=repr(e))
-                return None
+                return cls.generate_default()
 
             try:
                 return ApplicationSettings.model_validate_json(raw_data)
             except ValidationError as e:
                 load_logger.warning("Config file malformed, reset it", exception=repr(e))
-                return None
+                return cls.generate_default()
 
         app_data = try_load()
 
         obj = cls.__new__(cls)
         obj.file_name = file_name
+        obj.data = app_data
 
-        if app_data is not None:
-            obj.data = app_data
-            return obj
+        if obj.data.default:
+            obj.save()
 
-        obj.data = cls.generate_default()
-        obj.save()
         return obj
 
 

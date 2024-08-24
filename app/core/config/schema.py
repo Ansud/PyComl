@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,5 +39,12 @@ class UISettings(BaseSettings):
 
 
 class ApplicationSettings(BaseSettings):
+    default: ClassVar[bool] = False
+    wiki: WikiSettings = Field(default_factory=WikiSettings)
+    ui: UISettings = Field(default_factory=UISettings)
+
+
+class DefaultSettings(ApplicationSettings):
+    default: ClassVar[bool] = True
     wiki: WikiSettings = Field(default_factory=WikiSettings)
     ui: UISettings = Field(default_factory=UISettings)
