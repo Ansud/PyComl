@@ -11,19 +11,19 @@ Please use installers when they will be available.
 
 ## Development installation
 
-1. Clone repo
+1. Clone repository
 2. Create virtual environment with python 3.11+, may be earlier versions will work too, but i do not support them.
 3. Install `requirements-dev.txt`
 4. Execute `cli.py` to run application
 
 Happy hacking.
 
-If you want to commit to repo please install pre-commit in cloned repo via `pre-commit install`, then your changes
-will be properly formatted at commit.
+If you want to commit to repository please install pre-commit in cloned repository via `pre-commit install`,
+then your changes will be properly formatted at commit.
 
 And do not forget to run mypy, it sometimes produces useful errors and warnings.
 
-Linters and tests will run from GitHub side after you push to repo.
+Linters and tests will run from GitHub side after you push to repository.
 
 ## Badges
 
