@@ -17,3 +17,6 @@ CI in GitHub will run linters and check proper formatting.
 ## Badges
 
 [![Super-Linter](https://github.com/Ansud/PyComl/actions/workflows/superlinter.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Ansud/PyComl/run_tests.yml)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/Ansud/PyComl)
+![GitHub top language](https://img.shields.io/github/languages/top/Ansud/PyComl)
