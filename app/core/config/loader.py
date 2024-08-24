@@ -16,6 +16,10 @@ class Settings:
     NAME: ClassVar[str] = "app_config.json"
     # 1 Megabyte of config file is enough for everything
     MAX_SIZE: ClassVar[int] = 1 * 1024 * 1024
+    # Application settings path, different on different OSes
+    SETTINGS_BASE_PATH: ClassVar[Path] = Path(
+        QStandardPaths.standardLocations(QStandardPaths.StandardLocation.AppDataLocation)[0]
+    )
 
     file_name: Path
     data: ApplicationSettings
@@ -48,8 +52,7 @@ class Settings:
 
     @classmethod
     def load(cls) -> Self:
-        app_data = QStandardPaths.standardLocations(QStandardPaths.StandardLocation.AppDataLocation)
-        config_file_path = Path(app_data[0]) / PYCOML_APP_NAME
+        config_file_path = cls.SETTINGS_BASE_PATH / PYCOML_APP_NAME
         config_file_path.mkdir(exist_ok=True)
 
         file_name = config_file_path / cls.NAME
