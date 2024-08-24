@@ -24,7 +24,7 @@ class Settings:
     file_name: Path
     data: ApplicationSettings
 
-    def __init__(self):
+    def __init__(self) -> None:
         raise NotImplementedError("Please do not instanciate directly, use load() function.")
 
     def save(self) -> None:
