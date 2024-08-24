@@ -4,9 +4,6 @@ ExifRead==3.0.0
 idna==3.7
 pydantic==2.8.2
 PyQt6==6.7.1
-PyQt6-Qt6==6.7.2
-PyQt6-sip==13.8.0
-PyYAML==6.0.2
 requests==2.32.3
 Send2Trash==1.8.3
 structlog==24.4.0
