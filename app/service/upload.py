@@ -3,7 +3,7 @@ import traceback
 import requests
 from PyQt6.QtCore import QThread, QTimer
 
-from app.constants import TIMESTAMP_STATUSBAR, URL
+from app.core.constants import TIMESTAMP_STATUSBAR, URL
 from app.service.process import ProcessImageUpload
 
 

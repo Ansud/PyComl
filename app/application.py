@@ -31,7 +31,8 @@ from PyQt6.QtWidgets import (
 from send2trash import send2trash
 
 from app.completer import SearchBox
-from app.constants import (
+from app.core.config import LeftFrameConfig, RightFrameConfig
+from app.core.constants import (
     CHECK_BUTTON_ALL,
     CHECK_BUTTON_NONE,
     HORIZONTAL_LEFT_SIZE,
@@ -49,6 +50,7 @@ from app.constants import (
     MENU_DELETE_IMAGE,
     MENU_EDIT_IMAGE_GIMP,
     MENU_REMOVE_IMAGE,
+    PYCOML_APP_NAME,
     PYCOML_VERSION,
     RELOAD_BUTTON,
     SORT_BUTTON_BY_DATE,
@@ -61,7 +63,6 @@ from app.constants import (
     WIDTH_WIDGET,
     WIDTH_WIDGET_RIGHT,
 )
-from app.core.config import LeftFrameConfig, RightFrameConfig
 from app.core.image.exif import EXIFImage
 from app.core.image.gps_location import get_exif_location
 from app.service.upload import UploadTool
@@ -97,7 +98,7 @@ class PyComlApplication(QWidget):
         self.generate_left_bottom_frame()
 
         self.showMaximized()
-        self.setWindowTitle("PyComl version " + PYCOML_VERSION + " - Wikimedia Commons")
+        self.setWindowTitle(f"{PYCOML_APP_NAME} version {PYCOML_VERSION} - Wikimedia Commons")
 
         self.show()
 

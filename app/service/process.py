@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import QObject, QTimer, pyqtSlot
 
-from app.constants import URL
+from app.core.constants import PYCOML_APP_NAME, URL
 
 
 class ProcessImageUpload(QObject):
@@ -60,7 +60,7 @@ class ProcessImageUpload(QObject):
                 "format": "json",
                 "token": CSRF_TOKEN,
                 "ignorewarnings": 1,
-                "comment": "PyComl upload: " + file_name,
+                "comment": f"{PYCOML_APP_NAME} upload: {file_name}",
                 "text": text,
             }
 
@@ -105,9 +105,9 @@ class ProcessImageUpload(QObject):
         cat_text = cat_text.replace(" | ", "|")
         cat_text = cat_text.strip()
         if cat_text == "|":
-            cat_text = "Uploaded with PyComl"
+            cat_text = f"Uploaded with {PYCOML_APP_NAME}"
         else:
-            cat_text += "|Uploaded with PyComt"
+            cat_text += f"|Uploaded with {PYCOML_APP_NAME}"
         cat_text = cat_text.replace("||", "|")
         print(cat_text)  # noqa: T201
         categories = cat_text.split("|")

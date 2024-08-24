@@ -1,3 +1,4 @@
+PYCOML_APP_NAME = "PyComl"
 PYCOML_VERSION = "0.0"
 
 # Window sizes
