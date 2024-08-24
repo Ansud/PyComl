@@ -55,22 +55,22 @@ class Settings:
         config_file_path = cls.SETTINGS_BASE_PATH / PYCOML_APP_NAME
         config_file_path.mkdir(exist_ok=True)
 
-        file_name = config_file_path / cls.NAME
+        config_file = config_file_path / cls.NAME
 
         def try_load() -> ApplicationSettings:
-            load_logger = logger.bind(file_name=str(file_name))
+            load_logger = logger.bind(file_name=str(config_file))
 
-            if not file_name.exists():
+            if not config_file.exists():
                 return cls.generate_default()
 
-            file_size = file_name.stat().st_size
+            file_size = config_file.stat().st_size
 
             if file_size > cls.MAX_SIZE:
                 load_logger.warning("Config file size is too large, reset it", size=file_size)
                 return cls.generate_default()
 
             try:
-                with file_name.open("r+") as f:
+                with config_file.open("r+") as f:
                     raw_data = f.read()
             except OSError as e:
                 load_logger.warning("Failed to open config file, reset it", exception=repr(e))
@@ -85,7 +85,7 @@ class Settings:
         app_data = try_load()
 
         obj = cls.__new__(cls)
-        obj.file_name = file_name
+        obj.file_name = config_file
         obj.data = app_data
 
         if obj.data.default:
