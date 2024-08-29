@@ -314,7 +314,7 @@ class PyComlApplication(QWidget):
         """View location in web browser"""
         loc = image_widget.lineEditLocation.text()
         if loc:
-            numbers = re.findall("-?\d+\.?\d*", loc)
+            numbers = re.findall(r"-?\d+\.?\d*", loc)
             if len(numbers) >= 2:
                 url = f"https://www.openstreetmap.org/search?query={numbers[0]}%2C{numbers[1]}"
                 webbrowser.open(url)

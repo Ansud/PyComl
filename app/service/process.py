@@ -115,7 +115,7 @@ class ProcessImageUpload(QObject):
         for category in categories:
             if category:
                 # check whether it is a template (starts with {{, ends with }})
-                if re.match("^\{\{.*\}\}$", category):
+                if re.match(r"^\{\{.*\}\}$", category):
                     catFinalText = catFinalText + category + "\n"
                 else:
                     # add brackets ([[Category:category]])
