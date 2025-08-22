@@ -2,7 +2,7 @@
 
 PyComl is coded in Python/PyQt6. It is inspired by [PyCommonist](https://github.com/benprieur/PyCommonist).
 
-Current version is 0.0 (23.08.2024). It is MVP and it is in progress.
+Current version is 0.0 (23.08.2024). It is MVP and it is in progress. I learn how to use QML and do it very slow :)
 
 ## User manual
 
